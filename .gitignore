@@ -11,6 +11,7 @@ __pycache__/
 *.json
 *.csv
 *.db
+private.py
 
 # Log files
 *.log

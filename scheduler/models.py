@@ -37,19 +37,9 @@ class Base(object):
             cur_attr = getattr(self, c.name)
             # If datetime generate string representation
             if isinstance(cur_attr, datetime):
-                cur_attr = cur_attr.strftime('%d %B %Y')
+                cur_attr = cur_attr.strftime('%d %B %Y - %H %M')
             temp_dict[c.name] = cur_attr
         return temp_dict
-
-    def populate(self, data):
-        """ Populates matching attributes of class instance.
-        param dict data: dict where for each entry key, value equal attributename, attributevalue."""
-        for key, value in data.items():
-            if hasattr(self, key):
-                # Convert string dates into datetimes
-                if isinstance(getattr(self, key), datetime) or str(self.__table__.c[key].type) == 'DATE':
-                    value = datetime.strptime(value, "%d %B %Y")
-                setattr(self, key, value)
 
 Base = declarative_base(cls=Base)
 
@@ -77,13 +67,13 @@ class Task(Base):
     tasktype = Column(String(256))
     description = Column(Text)
     esttimemins = Column(Integer, default=30)
-    due = Column(DateTime)
+    due = Column(DateTime(timezone=True))
 
     critical = Column(Boolean)
     #Amount task is completed as an integer percentage - 100 = complete, 0 = not started
     progress = Column(Integer, default=0)
 
-    workperiods = relationship("WorkPeriod", back_populates="task")
+    timeperiods = relationship("TimePeriod", back_populates="task")
 
     @property
     def assigned(self):
@@ -103,8 +93,11 @@ class Task(Base):
 class TimePeriod(Base):
     """Object representing a block of time in a calendar."""
 
-    startdatetime = Column(DateTime)
-    enddatetime = Column(DateTime)
+    startdatetime = Column(DateTime(timezone=True))
+    enddatetime = Column(DateTime(timezone=True))
+    description = Column(String(128))
+    task_id = Column(Integer, ForeignKey('task.id'))
+    task = relationship("Task", back_populates="timeperiods")
 
     def __init__(self, start, end):
         self.startdatetime = start
@@ -113,21 +106,15 @@ class TimePeriod(Base):
     @property
     def available(self):
         """ Is time period available for assignment."""
-        pass
+        return not task
 
+    @property
+    def duration(self):
+        """ Duration of time period in minutes. """
+        pass
     # To schedule we split a time period into two - one with assigned time
     # one as available period left over
 
-class WorkPeriod(Base):
-    """Object representing a period of working on a task."""
-
-    # Task assigned to dayunit (initially none)
-    task_id = Column(Integer, ForeignKey('task.id'))
-    task = relationship("Task")
-
-    #This constrains user via workweeks relationship with Settings
-    timeperiod_id = Column(Integer, ForeignKey('timeperiod.id'))
-    timeperiod = relationship("TimePeriod")
 
 
 # Create new DB

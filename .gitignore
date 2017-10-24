@@ -18,6 +18,9 @@ __pycache__/
 # C extensions
 *.so
 
+# Notebook files
+*.ipynb
+
 # Distribution / packaging
 .Python
 env/
@@ -35,6 +38,7 @@ var/
 *.egg-info/
 .installed.cfg
 *.egg
+.venv/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template

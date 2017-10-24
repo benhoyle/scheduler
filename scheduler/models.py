@@ -25,8 +25,8 @@ db_path = os.path.join(os.getcwd(), db_name)
 engine = create_engine('sqlite:///' + db_path, echo=False)
 
 # Setup SQLAlchemy session
-session = sessionmaker(bind=engine)
-
+Session = sessionmaker(bind=engine)
+session = Session()
 
 class Base(object):
     """ Extensions to Base class. """
@@ -100,7 +100,7 @@ class Task(Base):
         self.due = duedate
 
         if timetype == "hours":
-            time_estimate = time_estimate*60
+            time_estimate = int(time_estimate)*60
         self.esttimemins = time_estimate
 
         self.taskref = taskref

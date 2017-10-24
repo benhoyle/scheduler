@@ -7,8 +7,13 @@ from oauth2client import client
 from oauth2client import tools
 from oauth2client.file import Storage
 
-import datetime
+from scheduler.models import Task, TimePeriod
 
+import pytz
+from datetime import datetime
+from dateutil import parser
+
+# The paths for the .json credential files are stored in a private.py file
 from private import (
     CLIENT_SECRET_FILE, CAL_CREDS_FILENAME, SHEET_CREDS_FILENAME,
     CAL_ID, SHEET_ID
@@ -53,7 +58,19 @@ def get_tasks_from_sheet(sheet_id=SHEET_ID):
     result = service.spreadsheets().values().get(
         spreadsheetId=sheet_id, range=range_name).execute()
     values = result.get('values', [])
-    return values
+    tasks = []
+    for value in values[1:]:
+        tasks.append(
+            Task(
+                value[4],
+                value[3],
+                taskref=value[0],
+                tasktype=value[1],
+                description=value[2],
+                timetype="hours"
+                )
+            )
+    return tasks
 
 
 def get_work_blocks(calendar_id=CAL_ID):
@@ -67,4 +84,17 @@ def get_work_blocks(calendar_id=CAL_ID):
         calendarId=calendar_id, timeMin=now, maxResults=30, singleEvents=True,
         orderBy='startTime').execute()
     events = events_result.get('items', [])
-    return events
+
+    time_periods = []
+    for event in events:
+        # Create a new time period object
+        # First deal with timezones
+        start_timezone = pytz.timezone(event['start']['timeZone'])
+        end_timezone = pytz.timezone(event['start']['timeZone'])
+        # Convert UTC times into timezone aware times
+        startdt = parser.parse(event['start']['dateTime']) \
+            .replace(tzinfo=pytz.utc).astimezone(start_timezone)
+        enddt = parser.parse(event['end']['dateTime']) \
+            .replace(tzinfo=pytz.utc).astimezone(end_timezone)
+        time_periods.append(TimePeriod(startdt, enddt))
+    return time_periods

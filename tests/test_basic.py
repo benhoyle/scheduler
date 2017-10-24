@@ -1,20 +1,23 @@
 # -*- coding: utf-8 -*-
 
-from .context import skeleton
 # Import other stuff here
 
-import unittest
+import pytest
+from datetime import datetime
 
-class BasicTestSuite(unittest.TestCase):
+from scheduler.models import (
+    Task, TimePeriod, WorkPeriod
+)
+
+class TestGeneral:
     """Basic test cases."""
 
-    def setUp(self):
-        """Pre-test activities."""
-        pass
-    
-    def test_X(self):
-        """ Add tests here. """
-        pass
+    def test_creation(self):
+        """ Test generating objects of each type."""
+        test_task = Task()
+        test_timeperiod = TimePeriod(datetime.now(), datetime.now())
+        test_workperiod = WorkPeriod()
 
-if __name__ == '__main__':
-    unittest.main()
+        assert test_task.as_dict()['object_type'] == 'Task'
+        assert test_timeperiod.as_dict()['object_type'] == 'TimePeriod'
+        assert test_workperiod.as_dict()['object_type'] == 'WorkPeriod'

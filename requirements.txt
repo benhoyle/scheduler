@@ -1,1 +1,4 @@
-
+sqlalchemy
+icalendar
+google-api-python-client
+pytest

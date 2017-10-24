@@ -11,14 +11,14 @@ with open('LICENSE') as f:
     license = f.read()
 
 setup(
-    name='skeleton',
+    name='scheduler',
     version='0.0.1',
     description='Add here.',
     long_description=readme,
     author='Ben Hoyle',
     author_email='benjhoyle@gmail.com',
-    url='https://github.com/benhoyle/skeleton_proj',
+    url='https://github.com/benhoyle/scheduler',
     license=license,
     #packages=find_packages(exclude=('tests', 'docs'))
-    packages=['skeleton']
+    packages=['scheduler']
 )

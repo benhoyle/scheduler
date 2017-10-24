@@ -14,7 +14,7 @@ class TestGeneral:
 
     def test_creation(self):
         """ Test generating objects of each type."""
-        test_task = Task()
+        test_task = Task(datetime.now(), 6)
         test_timeperiod = TimePeriod(datetime.now(), datetime.now())
 
         assert test_task.as_dict()['object_type'] == 'Task'

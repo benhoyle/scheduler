@@ -4,6 +4,8 @@
 import os
 from datetime import datetime
 
+from dateutil import parser
+
 # Create DB
 from sqlalchemy import create_engine
 
@@ -21,6 +23,9 @@ from sqlalchemy import Column, Integer, String, Boolean, Text, \
 db_name = "data.db"
 db_path = os.path.join(os.getcwd(), db_name)
 engine = create_engine('sqlite:///' + db_path, echo=False)
+
+# Setup SQLAlchemy session
+session = sessionmaker(bind=engine)
 
 
 class Base(object):
@@ -44,6 +49,25 @@ class Base(object):
             temp_dict[c.name] = cur_attr
         return temp_dict
 
+    def save(self):
+        """
+        Save a model instance.
+
+        :return: Model instance
+        """
+        session.add(self)
+        session.commit()
+
+        return self
+
+    def delete(self):
+        """
+        Delete a model instance.
+
+        :return: session.commit()'s result
+        """
+        session.delete(self)
+        return session.commit()
 
 Base = declarative_base(cls=Base)
 
@@ -65,14 +89,23 @@ class Task(Base):
 
     timeperiods = relationship("TimePeriod", back_populates="task")
 
-    def __init__(self, duedate, time_estimate):
-        """"""
+    def __init__(
+        self, duedate, time_estimate, taskref=None, tasktype=None,
+        description=None, timetype="minutes"
+    ):
+        """ Initialise object - needs at least a duedate and time est. """
+
+        if not isinstance(duedate, datetime):
+            duedate = parser.parse(duedate)
         self.due = duedate
+
+        if timetype == "hours":
+            time_estimate = time_estimate*60
         self.esttimemins = time_estimate
 
-    def init_from_string(self, duedt_str, time_est_str, timetype="hours"):
-        """ Create a task from duedate and time estimate as strings."""
-        pass
+        self.taskref = taskref
+        self.tasktype = tasktype
+        self.description = description
 
     @property
     def assigned(self):
@@ -89,6 +122,11 @@ class Task(Base):
     def duetime(self):
         """ Time component of due datetime."""
         pass
+
+    def reset_assignments(self):
+        """ Clear all existing assignments. """
+        for timeperiod in self.timeperiods:
+            self.timeperiods.remove(timeperiod)
 
 
 class TimePeriod(Base):
@@ -116,9 +154,6 @@ class TimePeriod(Base):
     # To schedule we split a time period into two - one with assigned time
     # one as available period left over
 
-
 # Create new DB
 Base.metadata.create_all(engine)
 
-# Setup SQLAlchemy session
-Session = sessionmaker(bind=engine)

@@ -4,30 +4,33 @@
 import os
 from datetime import datetime
 
-# Define name and path for SQLite3 DB
-db_name = "data.db"
-db_path = os.path.join(os.getcwd(), db_name)
-
 # Create DB
 from sqlalchemy import create_engine
-engine = create_engine('sqlite:///' + db_path, echo=False)
 
 # Setup imports
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import relationship
+from sqlalchemy.orm import sessionmaker
 
 # Define Class for Excluded Matter Case Details
-from sqlalchemy import Column, Integer, String, Date, Boolean, Text, \
+from sqlalchemy import Column, Integer, String, Boolean, Text, \
                         ForeignKey, DateTime
+
+# Define name and path for SQLite3 DB
+db_name = "data.db"
+db_path = os.path.join(os.getcwd(), db_name)
+engine = create_engine('sqlite:///' + db_path, echo=False)
+
 
 class Base(object):
     """ Extensions to Base class. """
+
     @declared_attr
     def __tablename__(cls):
         return cls.__name__.lower()
 
-    id =  Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True)
 
     def as_dict(self):
         """ Return object as a dictionary. """
@@ -41,23 +44,9 @@ class Base(object):
             temp_dict[c.name] = cur_attr
         return temp_dict
 
+
 Base = declarative_base(cls=Base)
 
-class ParentModel(Base):
-    """ Model for a parent entity. """
-    # Example name field
-    name = Column(String(256))
-
-    # Relationship for children
-    children = relationship("ChildModel", backref="parent")
-
-class ChildModel(Base):
-    """ Model for a child entity. """
-    # Example name field
-    name = Column(String(256))
-
-    # Foreign key for parent
-    parent_id = Column(Integer, ForeignKey('parentmodel.id'))
 
 # Task Models
 class Task(Base):
@@ -70,14 +59,25 @@ class Task(Base):
     due = Column(DateTime(timezone=True))
 
     critical = Column(Boolean)
-    #Amount task is completed as an integer percentage - 100 = complete, 0 = not started
+    # Amount task is completed as an integer percentage
+    # - 100 = complete, 0 = not started
     progress = Column(Integer, default=0)
 
     timeperiods = relationship("TimePeriod", back_populates="task")
 
+    def __init__(self, duedate, time_estimate):
+        """"""
+        self.due = duedate
+        self.esttimemins = time_estimate
+
+    def init_from_string(self, duedt_str, time_est_str, timetype="hours"):
+        """ Create a task from duedate and time estimate as strings."""
+        pass
+
     @property
     def assigned(self):
         """ Has task been assigned to time periods."""
+        # If sum of duration for timeperiods ~ esttimemins = True
         pass
 
     @property
@@ -89,6 +89,7 @@ class Task(Base):
     def duetime(self):
         """ Time component of due datetime."""
         pass
+
 
 class TimePeriod(Base):
     """Object representing a block of time in a calendar."""
@@ -106,7 +107,7 @@ class TimePeriod(Base):
     @property
     def available(self):
         """ Is time period available for assignment."""
-        return not task
+        return not self.task
 
     @property
     def duration(self):
@@ -116,10 +117,8 @@ class TimePeriod(Base):
     # one as available period left over
 
 
-
 # Create new DB
 Base.metadata.create_all(engine)
 
 # Setup SQLAlchemy session
-from sqlalchemy.orm import sessionmaker
 Session = sessionmaker(bind=engine)

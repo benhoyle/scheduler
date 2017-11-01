@@ -4,6 +4,7 @@
 
 import pytest
 from datetime import datetime
+import pytz
 
 from scheduler.models import (
     Task, TimePeriod
@@ -19,3 +20,11 @@ class TestGeneral:
 
         assert test_task.as_dict()['object_type'] == 'Task'
         assert test_timeperiod.as_dict()['object_type'] == 'TimePeriod'
+
+    def test_duration(self):
+        """ Test getting duration of a time period."""
+        test_timeperiod = TimePeriod(
+            datetime(2010,10,10,12,00),
+            datetime(2010,10,10,12,30)
+            )
+        assert test_timeperiod.duration == 30

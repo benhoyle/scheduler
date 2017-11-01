@@ -3,8 +3,12 @@
 # Skeleton for setting up a basic SQLAlchemy mapping to a SQLite 3 DB
 import os
 from datetime import datetime
-
 from dateutil import parser
+import pytz
+
+from math import ceil, floor
+
+import json
 
 # Create DB
 from sqlalchemy import create_engine
@@ -27,6 +31,7 @@ engine = create_engine('sqlite:///' + db_path, echo=False)
 # Setup SQLAlchemy session
 Session = sessionmaker(bind=engine)
 session = Session()
+
 
 class Base(object):
     """ Extensions to Base class. """
@@ -68,6 +73,21 @@ class Base(object):
         """
         session.delete(self)
         return session.commit()
+
+    def __repr__(self):
+        return json.dumps(self.as_dict())
+
+    @classmethod
+    def get_all(cls):
+        """ Get all objects."""
+        return session.query(cls).all()
+
+    @classmethod
+    def delete_all(cls):
+        """ Delete all objects."""
+        session.query(cls).delete()
+        return session.commit()
+
 
 Base = declarative_base(cls=Base)
 
@@ -111,7 +131,11 @@ class Task(Base):
     def assigned(self):
         """ Has task been assigned to time periods."""
         # If sum of duration for timeperiods ~ esttimemins = True
-        pass
+        time_left = floor(
+            self.esttimemins*(1-(self.progress/100.0))
+        )
+        tp_times = sum([tp.duration for tp in self.timeperiods])
+        return tp_times >= time_left
 
     @property
     def duedate(self):
@@ -139,8 +163,14 @@ class TimePeriod(Base):
     task = relationship("Task", back_populates="timeperiods")
 
     def __init__(self, start, end):
-        self.startdatetime = start
-        self.enddatetime = end
+        if start.tzinfo:
+            self.startdatetime = start.astimezone(pytz.utc)
+        else:
+            self.startdatetime = start
+        if end.tzinfo:
+            self.enddatetime = end.astimezone(pytz.utc)
+        else:
+            self.enddatetime = end
 
     @property
     def available(self):
@@ -150,10 +180,49 @@ class TimePeriod(Base):
     @property
     def duration(self):
         """ Duration of time period in minutes. """
-        pass
-    # To schedule we split a time period into two - one with assigned time
-    # one as available period left over
+        return ceil(
+            (self.enddatetime - self.startdatetime).total_seconds() / 60.0
+            )
+
+    @classmethod
+    def unassigned_in_range(cls, startdate, enddate):
+        """ Get first unassigned time period in the supplied
+        date range. Ordered by startdatetime.
+
+        """
+        return session.query(cls).filter(cls.task_id == None) \
+            .filter(cls.startdatetime >= startdate) \
+            .filter(cls.enddatetime <= enddate) \
+            .order_by(cls.startdatetime).first()
+
+    @classmethod
+    def get_assigned(cls):
+        """ Get all assigned time periods."""
+        return session.query(cls).filter(cls.task_id != None).all()
+
+    def as_event(self):
+        """ Output the time period in a dict format that can be
+        easily added as an event to Google calendar."""
+        if self.task:
+            summary = self.task.taskref
+            desc = self.task.description
+        else:
+            summary = None
+            desc = self.description
+
+        return {
+            'summary': summary,
+            'description': desc,
+            'start': {
+                'dateTime': self.startdatetime.isoformat(),
+                'timeZone': pytz.utc.zone
+            },
+            'end': {
+                'dateTime': self.enddatetime.isoformat(),
+                'timeZone': pytz.utc.zone
+            }
+        }
+
 
 # Create new DB
 Base.metadata.create_all(engine)
-

@@ -16,10 +16,10 @@ from dateutil import parser
 # The paths for the .json credential files are stored in a private.py file
 from private import (
     CLIENT_SECRET_FILE, CAL_CREDS_FILENAME, SHEET_CREDS_FILENAME,
-    CAL_ID, SHEET_ID
+    CAL_ID, SHEET_ID,  OUTPUT_CAL_ID
 )
 
-CAL_SCOPES = 'https://www.googleapis.com/auth/calendar.readonly'
+CAL_SCOPES = 'https://www.googleapis.com/auth/calendar'
 SHEET_SCOPES = 'https://www.googleapis.com/auth/spreadsheets.readonly'
 APP_NAME = 'scheduler'
 
@@ -60,17 +60,51 @@ def get_tasks_from_sheet(sheet_id=SHEET_ID):
     values = result.get('values', [])
     tasks = []
     for value in values[1:]:
-        tasks.append(
-            Task(
-                value[4],
-                value[3],
-                taskref=value[0],
-                tasktype=value[1],
-                description=value[2],
-                timetype="hours"
+        try:
+            tasks.append(
+                Task(
+                    value[4],
+                    value[3],
+                    taskref=value[0],
+                    tasktype=value[1],
+                    description=value[2],
+                    timetype="hours"
+                    )
                 )
-            )
+        except:
+            continue
     return tasks
+
+
+def post_assigned_time(events, calendar_id=OUTPUT_CAL_ID):
+    """ Add events to output calendar.
+
+    Each event is a dict in the following format:
+    event = {
+      'summary': 'Google I/O 2015',
+      'location': '800 Howard St., San Francisco, CA 94103',
+      'description': 'A chance to hear more.',
+      'start': {
+        'dateTime': '2015-05-28T09:00:00-07:00',
+        'timeZone': 'America/Los_Angeles',
+      },
+      'end': {
+        'dateTime': '2015-05-28T17:00:00-07:00',
+        'timeZone': 'America/Los_Angeles',
+      }
+    }"""
+    credentials = get_credentials(CAL_CREDS_FILENAME, CAL_SCOPES)
+    http = credentials.authorize(httplib2.Http())
+    service = discovery.build('calendar', 'v3', http=http)
+
+    output_events = list()
+    for event in events:
+        output_events.append(
+            service.events().insert(
+                calendarId=OUTPUT_CAL_ID, body=event
+            ).execute()
+        )
+    return output_events
 
 
 def get_work_blocks(calendar_id=CAL_ID):

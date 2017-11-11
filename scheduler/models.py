@@ -18,11 +18,12 @@ from sqlalchemy.orm import relationship
 from sqlalchemy import Column, Integer, String, Boolean, Text, \
                         ForeignKey, DateTime
 
-from scheduler.db_conf import SessionManager, engine
+from scheduler.db_conf import session
 
 Base = declarative_base()
 
-class ExtMixin(SessionManager):
+
+class ExtMixin(object):
     """ Extensions to Base class. """
 
     @declared_attr
@@ -49,8 +50,8 @@ class ExtMixin(SessionManager):
 
         :return: Model instance
         """
-        self.session.add(self)
-        self.session.commit()
+        session.add(self)
+        session.commit()
 
         return self
 
@@ -60,8 +61,8 @@ class ExtMixin(SessionManager):
 
         :return: session.commit()'s result
         """
-        self.session.delete(self)
-        return self.session.commit()
+        session.delete(self)
+        return session.commit()
 
     def __repr__(self):
         return json.dumps(self.as_dict())
@@ -69,21 +70,18 @@ class ExtMixin(SessionManager):
     @classmethod
     def get_all(cls):
         """ Get all objects."""
-        return self.session.query(cls).all()
+        return session.query(cls).all()
 
     @classmethod
     def delete_all(cls):
         """ Delete all objects."""
-        self.session.query(cls).delete()
-        return self.session.commit()
+        session.query(cls).delete()
+        return session.commit()
+
 
 # Task Models
 class Task(ExtMixin, Base):
     """Object representing a task to be completed."""
-
-    __tablename__ = "task"
-
-    id = Column(Integer, primary_key=True)
 
     taskref = Column(String(128))
     tasktype = Column(String(256))
@@ -126,16 +124,6 @@ class Task(ExtMixin, Base):
         tp_times = sum([tp.duration for tp in self.timeperiods])
         return tp_times >= time_left
 
-    @property
-    def duedate(self):
-        """ Date component of due datetime."""
-        pass
-
-    @property
-    def duetime(self):
-        """ Time component of due datetime."""
-        pass
-
     def reset_assignments(self):
         """ Clear all existing assignments. """
         for timeperiod in self.timeperiods:
@@ -144,10 +132,6 @@ class Task(ExtMixin, Base):
 
 class TimePeriod(ExtMixin, Base):
     """Object representing a block of time in a calendar."""
-
-    __tablename__ = "timeperiod"
-
-    id = Column(Integer, primary_key=True)
 
     startdatetime = Column(DateTime(timezone=True))
     enddatetime = Column(DateTime(timezone=True))
@@ -183,7 +167,7 @@ class TimePeriod(ExtMixin, Base):
         date range. Ordered by startdatetime.
 
         """
-        return self.session.query(cls).filter(cls.task_id == None) \
+        return session.query(cls).filter(cls.task_id == None) \
             .filter(cls.startdatetime >= startdate) \
             .filter(cls.enddatetime <= enddate) \
             .order_by(cls.startdatetime).first()
@@ -191,7 +175,7 @@ class TimePeriod(ExtMixin, Base):
     @classmethod
     def get_assigned(cls):
         """ Get all assigned time periods."""
-        return self.session.query(cls).filter(cls.task_id != None).all()
+        return session.query(cls).filter(cls.task_id != None).all()
 
     def as_event(self):
         """ Output the time period in a dict format that can be
@@ -215,7 +199,3 @@ class TimePeriod(ExtMixin, Base):
                 'timeZone': pytz.utc.zone
             }
         }
-
-# Create new DB - can we remove this from here?
-Base.metadata.create_all(engine)
-

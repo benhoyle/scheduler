@@ -13,8 +13,8 @@ engine = create_engine('sqlite:///' + db_path, echo=False)
 
 # Setup SQLAlchemy session
 Session = sessionmaker(bind=engine)
+session = Session()
 
-
-class SessionManager(object):
-    def __init__(self):
-        self.session = Session()
+#class SessionManager(object):
+    #def __init__(self):
+        #self.session = Session()

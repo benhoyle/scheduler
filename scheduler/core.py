@@ -3,12 +3,12 @@
 from scheduler.models import Task, TimePeriod
 
 from scheduler.google_api import (
-    get_tasks_from_sheet, get_work_blocks, post_assigned_time
+    get_tasks_from_sheet, get_work_blocks, post_assigned_time,
+    clear_events
 )
 
 # Import date & time functions
 from datetime import timedelta, datetime
-
 
 
 def reset_assignments(task):
@@ -20,6 +20,8 @@ def run():
     # Clear initial data
     Task.delete_all()
     TimePeriod.delete_all()
+    # Clear output calendar
+    clear_events()
     # Get tasks from Google spreadsheet
     tasks = get_tasks_from_sheet()
     # Get working blocks from Input Google calendar
@@ -70,17 +72,20 @@ def schedule_task(task, startdate=datetime.now()):
         else:
             # time period duration is longer than task duration
             # We need to adjust the statement below to work with timedeltas
-            enddatetime = (
+            new_enddatetime = (
                 available_tp.startdatetime +
                 timedelta(seconds=runningtime*60)
             )
+            original_enddatetime = available_tp.enddatetime
             # Split time period into two periods
-            new_tp_1 = TimePeriod(available_tp.startdatetime, enddatetime)
-            new_tp_2 = TimePeriod(enddatetime, available_tp.enddatetime)
+            available_tp.enddatetime = new_enddatetime
+            new_tp_2 = TimePeriod(new_enddatetime, original_enddatetime)
             # Assign first time period to task
-            new_tp_1.task = task
-            new_tp_1.save()
+            available_tp.task = task
+            available_tp.save()
             new_tp_2.save()
+            # Set next available time period as time period 2
+            available_tp = TimePeriod.unassigned_in_range(startdate, task.due)
             runningtime = 0
 
     return runningtime

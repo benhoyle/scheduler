@@ -132,3 +132,38 @@ def get_work_blocks(calendar_id=CAL_ID):
             .replace(tzinfo=pytz.utc).astimezone(end_timezone)
         time_periods.append(TimePeriod(startdt, enddt))
     return time_periods
+
+
+def get_all_events(calendar_id):
+    """ Get all events from a calendar."""
+    credentials = get_credentials(CAL_CREDS_FILENAME, CAL_SCOPES)
+    http = credentials.authorize(httplib2.Http())
+    service = discovery.build('calendar', 'v3', http=http)
+
+    all_events = list()
+    page_token = None
+    while True:
+        event_results = service.events().list(
+            calendarId=calendar_id, pageToken=page_token
+            ).execute()
+        events = event_results.get('items', [])
+        all_events = all_events + events
+        page_token = event_results.get('nextPageToken')
+        if not page_token:
+            break
+    return all_events
+
+
+def clear_events(calendar_id=OUTPUT_CAL_ID):
+    """ Wipe all events from a particular calendar."""
+    # Get all events
+    events = get_all_events(calendar_id)
+    # Iterate through and delete all events
+    credentials = get_credentials(CAL_CREDS_FILENAME, CAL_SCOPES)
+    http = credentials.authorize(httplib2.Http())
+    service = discovery.build('calendar', 'v3', http=http)
+
+    for event in events:
+        service.events().delete(
+            calendarId=calendar_id, eventId=event['id']
+            ).execute()

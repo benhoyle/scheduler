@@ -2,4 +2,6 @@ sqlalchemy
 icalendar
 google-api-python-client
 pytest
+pytest-cov
 tzlocal
+

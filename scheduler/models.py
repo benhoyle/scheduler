@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 # Skeleton for setting up a basic SQLAlchemy mapping to a SQLite 3 DB
-import os
 from datetime import datetime
 from dateutil import parser
 import pytz
@@ -10,30 +9,20 @@ from math import ceil, floor
 
 import json
 
-# Create DB
-from sqlalchemy import create_engine
-
 # Setup imports
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import relationship
-from sqlalchemy.orm import sessionmaker
 
 # Define Class for Excluded Matter Case Details
 from sqlalchemy import Column, Integer, String, Boolean, Text, \
                         ForeignKey, DateTime
 
-# Define name and path for SQLite3 DB
-db_name = "data.db"
-db_path = os.path.join(os.getcwd(), db_name)
-engine = create_engine('sqlite:///' + db_path, echo=False)
+from scheduler.db_conf import SessionManager, engine
 
-# Setup SQLAlchemy session
-Session = sessionmaker(bind=engine)
-session = Session()
+Base = declarative_base()
 
-
-class Base(object):
+class ExtMixin(SessionManager):
     """ Extensions to Base class. """
 
     @declared_attr
@@ -60,8 +49,8 @@ class Base(object):
 
         :return: Model instance
         """
-        session.add(self)
-        session.commit()
+        self.session.add(self)
+        self.session.commit()
 
         return self
 
@@ -71,8 +60,8 @@ class Base(object):
 
         :return: session.commit()'s result
         """
-        session.delete(self)
-        return session.commit()
+        self.session.delete(self)
+        return self.session.commit()
 
     def __repr__(self):
         return json.dumps(self.as_dict())
@@ -80,21 +69,21 @@ class Base(object):
     @classmethod
     def get_all(cls):
         """ Get all objects."""
-        return session.query(cls).all()
+        return self.session.query(cls).all()
 
     @classmethod
     def delete_all(cls):
         """ Delete all objects."""
-        session.query(cls).delete()
-        return session.commit()
-
-
-Base = declarative_base(cls=Base)
-
+        self.session.query(cls).delete()
+        return self.session.commit()
 
 # Task Models
-class Task(Base):
+class Task(ExtMixin, Base):
     """Object representing a task to be completed."""
+
+    __tablename__ = "task"
+
+    id = Column(Integer, primary_key=True)
 
     taskref = Column(String(128))
     tasktype = Column(String(256))
@@ -153,8 +142,12 @@ class Task(Base):
             self.timeperiods.remove(timeperiod)
 
 
-class TimePeriod(Base):
+class TimePeriod(ExtMixin, Base):
     """Object representing a block of time in a calendar."""
+
+    __tablename__ = "timeperiod"
+
+    id = Column(Integer, primary_key=True)
 
     startdatetime = Column(DateTime(timezone=True))
     enddatetime = Column(DateTime(timezone=True))
@@ -190,7 +183,7 @@ class TimePeriod(Base):
         date range. Ordered by startdatetime.
 
         """
-        return session.query(cls).filter(cls.task_id == None) \
+        return self.session.query(cls).filter(cls.task_id == None) \
             .filter(cls.startdatetime >= startdate) \
             .filter(cls.enddatetime <= enddate) \
             .order_by(cls.startdatetime).first()
@@ -198,7 +191,7 @@ class TimePeriod(Base):
     @classmethod
     def get_assigned(cls):
         """ Get all assigned time periods."""
-        return session.query(cls).filter(cls.task_id != None).all()
+        return self.session.query(cls).filter(cls.task_id != None).all()
 
     def as_event(self):
         """ Output the time period in a dict format that can be
@@ -223,6 +216,6 @@ class TimePeriod(Base):
             }
         }
 
-
-# Create new DB
+# Create new DB - can we remove this from here?
 Base.metadata.create_all(engine)
+

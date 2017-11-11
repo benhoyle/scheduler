@@ -9,7 +9,7 @@ from scheduler.models import (
 )
 
 
-class TestGeneral:
+class TestModel:
     """Basic test cases."""
 
     def test_creation(self):

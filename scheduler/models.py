@@ -164,11 +164,12 @@ class TimePeriod(ExtMixin, Base):
             )
         except AttributeError: # fix for Python 2.6
             td = self.enddatetime - self.startdatetime
+            # total_seconds() doesn't exist - use this instead
             duration = (
                 td.microseconds + (td.seconds + td.days * 24 * 3600)
                 * 10**6
                 ) / 10**6
-            duration = ceil(duration)
+            duration = ceil(duration / 60.0)
         return duration
 
     @classmethod

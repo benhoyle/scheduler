@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from scheduler.models import TimePeriod, Task
+from scheduler.models import TimePeriod, Task, Base
 
 import pytest
 import pytz
@@ -12,6 +12,7 @@ from datetime import datetime
 @pytest.yield_fixture(scope='module')
 def session():
     _engine = create_engine('sqlite://')
+    Base.metadata.create_all(_engine)
     _Session = sessionmaker(bind=_engine)
     _session = _Session()
     yield _session

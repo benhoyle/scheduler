@@ -5,7 +5,6 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import os
 
-
 # Define name and path for SQLite3 DB
 db_name = "data.db"
 db_path = os.path.join(os.getcwd(), db_name)

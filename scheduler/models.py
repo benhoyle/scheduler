@@ -18,7 +18,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy import Column, Integer, String, Boolean, Text, \
                         ForeignKey, DateTime
 
-from scheduler.db_conf import session
+from scheduler.db_conf import session, engine
 
 Base = declarative_base()
 
@@ -199,3 +199,5 @@ class TimePeriod(ExtMixin, Base):
                 'timeZone': pytz.utc.zone
             }
         }
+
+Base.metadata.create_all(engine)

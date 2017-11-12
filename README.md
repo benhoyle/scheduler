@@ -40,7 +40,8 @@ You can either:
 ```
 python3 -m venv /path/to/new/virtual/environment
 pip3 install -r requirements.txt
-``` or
+``` 
+or
 * Use the Dockerfile in this directory.
 
 Now create a file called ```private.py``` in the top level (project) directory.

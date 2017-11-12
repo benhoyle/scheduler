@@ -14,10 +14,13 @@ from datetime import datetime
 from dateutil import parser
 
 # The paths for the .json credential files are stored in a private.py file
-from private import (
-    CLIENT_SECRET_FILE, CAL_CREDS_FILENAME, SHEET_CREDS_FILENAME,
-    CAL_ID, SHEET_ID,  OUTPUT_CAL_ID
-)
+try:
+    from private import (
+        CLIENT_SECRET_FILE, CAL_CREDS_FILENAME, SHEET_CREDS_FILENAME,
+        CAL_ID, SHEET_ID,  OUTPUT_CAL_ID
+    )
+except ImportError:
+    continue
 
 CAL_SCOPES = 'https://www.googleapis.com/auth/calendar'
 SHEET_SCOPES = 'https://www.googleapis.com/auth/spreadsheets.readonly'

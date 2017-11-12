@@ -157,9 +157,19 @@ class TimePeriod(ExtMixin, Base):
     @property
     def duration(self):
         """ Duration of time period in minutes. """
-        return ceil(
-            (self.enddatetime - self.startdatetime).total_seconds() / 60.0
+        try:
+            duration = ceil(
+                (self.enddatetime - self.startdatetime)
+                .total_seconds() / 60.0
             )
+        except AttributeError: # fix for Python 2.6
+            td = self.enddatetime - self.startdatetime
+            duration = (
+                td.microseconds + (td.seconds + td.days * 24 * 3600)
+                * 10**6
+                ) / 10**6
+            duration = ceil(duration)
+        return duration
 
     @classmethod
     def unassigned_in_range(cls, startdate, enddate):

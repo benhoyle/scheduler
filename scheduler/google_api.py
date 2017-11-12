@@ -20,7 +20,13 @@ try:
         CAL_ID, SHEET_ID,  OUTPUT_CAL_ID
     )
 except ImportError:
-    continue
+    CLIENT_SECRET_FILE = ""
+    CAL_CREDS_FILENAME = ""
+    SHEET_CREDS_FILENAME = ""
+    CAL_ID = ""
+    SHEET_ID = ""
+    OUTPUT_CAL_ID = ""
+
 
 CAL_SCOPES = 'https://www.googleapis.com/auth/calendar'
 SHEET_SCOPES = 'https://www.googleapis.com/auth/spreadsheets.readonly'

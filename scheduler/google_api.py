@@ -16,21 +16,19 @@ from dateutil import parser
 # The paths for the .json credential files are stored in a private.py file
 try:
     from private import (
-        CLIENT_SECRET_FILE, CAL_CREDS_FILENAME, SHEET_CREDS_FILENAME,
-        CAL_ID, SHEET_ID,  OUTPUT_CAL_ID
+        INPUT_CAL_ID, SHEET_ID,  OUTPUT_CAL_ID
     )
 except ImportError:
-    CLIENT_SECRET_FILE = ""
-    CAL_CREDS_FILENAME = ""
-    SHEET_CREDS_FILENAME = ""
-    CAL_ID = ""
+    INPUT_CAL_ID = ""
     SHEET_ID = ""
     OUTPUT_CAL_ID = ""
-
 
 CAL_SCOPES = 'https://www.googleapis.com/auth/calendar'
 SHEET_SCOPES = 'https://www.googleapis.com/auth/spreadsheets.readonly'
 APP_NAME = 'scheduler'
+CLIENT_SECRET_FILE = 'client_secret.json'
+CAL_CREDS_FILENAME = 'calendar_creds.json'
+SHEET_CREDS_FILENAME = 'sheets_creds.json'
 
 
 def get_credentials(filename, scopes):
@@ -116,7 +114,7 @@ def post_assigned_time(events, calendar_id=OUTPUT_CAL_ID):
     return output_events
 
 
-def get_work_blocks(calendar_id=CAL_ID):
+def get_work_blocks(calendar_id=INPUT_CAL_ID):
     """ Gets free work blocks as defined in a Google calendar."""
     credentials = get_credentials(CAL_CREDS_FILENAME, CAL_SCOPES)
     http = credentials.authorize(httplib2.Http())
